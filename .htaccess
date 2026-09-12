@@ -1,0 +1,10 @@
+# Redirect sethclarkmusic.com -> sethpeterclarkmusic.com
+# Permanent (301), preserves the path and query string.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Match the old domain, with or without "www."
+  RewriteCond %{HTTP_HOST} ^(www\.)?sethclarkmusic\.com$ [NC]
+  RewriteRule ^ https://sethpeterclarkmusic.com%{REQUEST_URI} [L,R=301]
+</IfModule>
