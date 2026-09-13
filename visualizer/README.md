@@ -51,20 +51,54 @@ Monitor volume is tapped *after* the analyser, so you can turn your speakers
 down — or all the way off — while recording without changing the level in the
 exported file.
 
+## Layers
+
+A composition is a stack of layers, each one a scene with its own placement.
+Add as many as you like — four bar layers facing different edges, two ring
+layers at opposite corners, a wave laid diagonally over a radial. Layers draw
+bottom-up, so the top row of the list sits in front.
+
+Each row has: **👁** show/hide, **↑ ↓** reorder, **⧉** duplicate, **✕** delete.
+Click a layer's name to edit it.
+
+**Placement** applies to every scene, so anything can go anywhere:
+
+- The **3×3 grid** drops the layer into a corner, edge or the centre in one
+  click. Coming from full frame, it also halves the size to suit a corner.
+- **Horizontal / Vertical** place the layer's centre. The range runs past the
+  edges, so a layer can sit half off-frame.
+- **Width / Height** size it, up to twice the frame. **Lock** keeps the
+  aspect ratio while you drag either one.
+- **Rotation** turns it freely — a wave at 45°, bars raking diagonally.
+- **Opacity** and **Blend** (Add, Screen, Overlay, Multiply, Difference)
+  control how it sits over the layers beneath. Add and Screen are the ones
+  that make overlapping glows build rather than occlude.
+
+Placement is stored as a fraction of the frame, so a composition laid out in
+16:9 keeps its proportions when you switch the export to 9:16.
+
+Each layer carries its own **Detail**, **Thickness**, **Glow**, **Spin** and
+**Mirror**, plus whatever options its scene declares.
+
+**Motion trail** lives under **Look**, not on the layer — it smears the whole
+field at once, so it applies to the composition as a whole.
+
 ## Scenes
 
-| Scene | What it does |
-| --- | --- |
-| **Bars** | Log-spaced frequency spectrum, along the bottom or mirrored around the centre. |
-| **Radial** | The spectrum wrapped around a ring that pulses with the low end. |
-| **Wave** | Layered oscilloscope traces of the actual waveform. |
-| **Particles** | A field pushed out from the centre, with bursts fired on each beat. |
-| **Rings** | A spectrum-deformed blob shedding ripple rings on the beat. |
+| Scene | What it does | Its own options |
+| --- | --- | --- |
+| **Bars** | Log-spaced frequency spectrum. | Direction (up, down, left, right), baseline at the edge or centred, reflection |
+| **Radial** | Spectrum wrapped around a pulsing ring. | Arc (a full circle or a fan), start angle, inner radius, centre ring |
+| **Wave** | Oscilloscope traces of the waveform. | Straight line or looped circle, number of traces, amplitude |
+| **Particles** | A field thrown out from an emitter. | Emit from centre or any edge, direction (away, inward, fixed angle), spread, speed, emitter size |
+| **Rings** | Spectrum-deformed blob shedding ripples on the beat. | Blob and ripples independently, ripple speed, base size |
+| **Frame** | Spectrum along every edge at once. | All four sides or one pair, facing in or out, inset, reach |
 
-Every scene reads the same controls, so the same settings carry across:
+**Frame** is the quickest way to get the edges moving on all sides. For finer
+control use four **Bars** layers, one per direction.
 
-- **Detail** — number of frequency bands (or particle density).
-- **Thickness**, **Glow**, **Motion trail**, **Rotation**, **Mirror**.
+Shared reactivity controls (under **Reactivity**) apply to every layer:
+
 - **Sensitivity** / **Bass boost** — how hard the visuals react. Turn these
   down for loud masters, up for quiet or sparse material.
 - **Smoothing** — low is twitchy and percussive, high is fluid.
@@ -72,7 +106,8 @@ Every scene reads the same controls, so the same settings carry across:
 
 Bands are spaced logarithmically between 30 Hz and 16 kHz, with a tilt that
 lifts the high end. Linear FFT bins would crowd everything musical into the
-left few percent of the screen.
+left few percent of the screen. Layers set to the same **Detail** share one
+computed spectrum, so adding layers costs drawing time, not analysis.
 
 ## Backgrounds
 
@@ -136,26 +171,39 @@ visualizer/
 ### Adding a scene
 
 Drop a file in `js/scenes/`, register it on `Viz.scenes`, and add a
-`<script>` tag for it in `index.html`. It shows up in the scene picker
-automatically.
+`<script>` tag for it in `index.html`. It appears in the scene lists
+automatically, and its `options` become controls in the layer editor.
 
 ```js
 Viz.scenes.myScene = {
   name: "My Scene",
-  reset() { /* optional: called on scene change or resize */ },
+  options: [
+    { key: "mode", label: "Mode", type: "select", def: "a",
+      choices: [["a", "First"], ["b", "Second"]] },
+    { key: "size", label: "Size", type: "range", def: 0.5,
+      min: 0, max: 1, step: 0.01, fmt: "pct" },   // fmt: pct | deg | x
+    { key: "glowy", label: "Extra glow", type: "check", def: true }
+  ],
   draw(ctx, w, h, a, s, t, dt) {
+    // w, h      THIS LAYER's box. Position, rotation and scale are already
+    //           applied, so always draw as if you own the whole box.
     // a.bands   Float32Array, 0..1, low -> high frequency
     // a.wave    raw time-domain samples
     // a.bass / a.mid / a.treble / a.energy   0..1
     // a.beat    true on the frame a beat lands
     // a.beatEnv 1 -> 0 decay after each beat, good for pulses
-    // s.colors  three palette colours; s.params  the shared controls
+    // s.colors  three palette colours
+    // s.params  shared per-layer controls (count, thickness, glow, spin, mirror)
+    // s.opts    this scene's declared options
+    // s.store   scratch space private to this layer — keep particle pools and
+    //           other persistent state here, never on the scene object, or two
+    //           layers of the same scene will fight over it
     // s.scale   size factor vs 1080p, for resolution-independent widths
   }
 };
 ```
 
-Scenes draw onto an offscreen canvas so motion trails smear only the
+Layers draw onto an offscreen canvas so motion trails smear only the
 visuals — text and artwork stay crisp on top.
 
 ## Shortcuts

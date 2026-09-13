@@ -15,7 +15,7 @@ Viz.Renderer = class {
     this.bgImage = null;
     this.logoImage = null;
     this.grainPattern = null;
-    this.lastScene = null;
+    this._stores = {};
     this._bgKey = null;
     this._bgCanvas = null;
     this._bgToken = 0;
@@ -49,12 +49,21 @@ Viz.Renderer = class {
     this.canvas.height = this.field.height = h;
     this.fieldCtx.fillStyle = "#000";
     this.fieldCtx.fillRect(0, 0, w, h);
-    this.resetScene();
+    this._stores = {};
   }
 
-  resetScene() {
-    const scene = Viz.scenes[this.state.scene];
-    if (scene && scene.reset) scene.reset();
+  /* Per-layer scratch state (particle pools, ripples). Keyed by layer and
+     scene so switching a layer's scene starts it clean, and two layers of
+     the same scene never share a pool. */
+  _storeFor(layer) {
+    const key = layer.id + "|" + layer.scene;
+    return this._stores[key] || (this._stores[key] = {});
+  }
+
+  _pruneStores() {
+    const live = {};
+    this.state.layers.forEach((l) => { live[l.id + "|" + l.scene] = true; });
+    Object.keys(this._stores).forEach((k) => { if (!live[k]) delete this._stores[k]; });
   }
 
   setImage(which, img) {
@@ -266,26 +275,48 @@ Viz.Renderer = class {
     const dt = this.lastTime ? Math.min(0.1, (now - this.lastTime) / 1000) : 1 / 60;
     this.lastTime = now;
 
-    if (this.lastScene !== this.state.scene) {
-      this.lastScene = this.state.scene;
-      this.resetScene();
-    }
-
-    const a = this.engine.frame(this.state.params.count, this.state.react);
+    const a = this.engine.frame(this.state.react);
     const fctx = this.fieldCtx;
-    const trail = this.state.params.trail;
+    const trail = this.state.trail;
 
     this._drawBackground(fctx, w, h, trail > 0 ? Math.max(0.05, 1 - trail) : 1, a);
+    this._pruneStores();
 
-    const scene = Viz.scenes[this.state.scene] || Viz.scenes.bars;
-    const sceneState = {
-      colors: this.colors,
-      params: this.state.params,
-      scale: Math.min(w, h) / 1080
-    };
-    fctx.save();
-    scene.draw(fctx, w, h, a, sceneState, t, dt);
-    fctx.restore();
+    const scale = Math.min(w, h) / 1080;
+    const layers = this.state.layers || [];
+
+    for (let i = 0; i < layers.length; i++) {
+      const layer = layers[i];
+      if (!layer.on) continue;
+      const scene = Viz.scenes[layer.scene];
+      if (!scene) continue;
+
+      const lw = Math.max(8, layer.w * w);
+      const lh = Math.max(8, layer.h * h);
+      a.bands = this.engine.bands(layer.params.count);
+
+      fctx.save();
+      fctx.globalAlpha = layer.opacity;
+      fctx.globalCompositeOperation = layer.blend || "source-over";
+      /* Place by the layer's centre, then hand the scene a box of its own
+         so every scene gets position, size and rotation for free. */
+      fctx.translate(layer.x * w, layer.y * h);
+      if (layer.rot) fctx.rotate((layer.rot * Math.PI) / 180);
+      fctx.translate(-lw / 2, -lh / 2);
+
+      scene.draw(fctx, lw, lh, a, {
+        colors: this.colors,
+        params: layer.params,
+        opts: layer.opts || {},
+        store: this._storeFor(layer),
+        scale,
+        layer
+      }, t, dt);
+      fctx.restore();
+    }
+
+    fctx.globalAlpha = 1;
+    fctx.globalCompositeOperation = "source-over";
 
     const ctx = this.ctx;
     ctx.drawImage(this.field, 0, 0);

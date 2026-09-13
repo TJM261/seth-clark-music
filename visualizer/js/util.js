@@ -43,3 +43,29 @@ Viz.waveform = function (timeData, n) {
   }
   return out;
 };
+
+/* Re-orient the drawing space so a scene can always draw as though it grows
+   upward from the bottom edge, whichever side the user anchored it to.
+   Returns the [width, height] of the re-oriented space (swapped for the
+   sideways directions). */
+Viz.orient = function (ctx, w, h, dir) {
+  switch (dir) {
+    case "down":
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(Math.PI);
+      ctx.translate(-w / 2, -h / 2);
+      return [w, h];
+    case "right":
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.translate(-h / 2, -w / 2);
+      return [h, w];
+    case "left":
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.translate(-h / 2, -w / 2);
+      return [h, w];
+    default:
+      return [w, h];
+  }
+};

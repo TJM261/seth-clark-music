@@ -16,7 +16,10 @@ Viz.AudioEngine = class {
     this.objectUrl = null;
     this.ready = false;
 
-    this.bands = new Float32Array(0);
+    this._bandFrame = 0;
+    /* Silent placeholders so scenes can draw before a track is loaded. */
+    this.freqData = new Uint8Array(1024);
+    this.timeData = new Uint8Array(2048).fill(128);
     this.bassHistory = [];
     this.framesSinceBeat = 99;
     this.beatEnv = 0;
@@ -92,44 +95,21 @@ Viz.AudioEngine = class {
     return sum / (b - a) / 255;
   }
 
-  /* Pull one frame of analysis. `react` carries the user's reactivity settings. */
-  frame(count, react) {
-    const out = {
-      bands: this.bands, wave: this.timeData,
-      bass: 0, mid: 0, treble: 0, energy: 0, beat: false, beatEnv: this.beatEnv
-    };
+  /* One frame of overall analysis. Per-layer spectra come from bands(). */
+  frame(react) {
+    this._react = react;
+    const out = this._out || (this._out = {});
+    out.wave = this.timeData;
+    out.bands = this._empty || (this._empty = new Float32Array(0));
+    out.bass = out.mid = out.treble = out.energy = 0;
+    out.beat = false;
+    out.beatEnv = this.beatEnv;
     if (!this.analyser) return out;
 
     this.analyser.smoothingTimeConstant = Math.min(0.92, 0.55 + react.smoothing * 0.4);
     this.analyser.getByteFrequencyData(this.freqData);
     this.analyser.getByteTimeDomainData(this.timeData);
-
-    if (this.bands.length !== count) this.bands = new Float32Array(count);
-
-    /* Log-spaced bands: linear FFT bins crowd everything musical into the
-       left-hand few percent of the display, which looks dead. */
-    const fMin = 30, fMax = 16000, ratio = fMax / fMin;
-    const attack = 1 - react.smoothing * 0.6;
-    const release = 0.02 + (1 - react.smoothing) * 0.4;
-
-    for (let i = 0; i < count; i++) {
-      const f0 = fMin * Math.pow(ratio, i / count);
-      const f1 = fMin * Math.pow(ratio, (i + 1) / count);
-      const b0 = this._bin(f0);
-      const b1 = Math.max(this._bin(f1), b0 + 1);
-      let peak = 0;
-      for (let b = b0; b < b1; b++) if (this.freqData[b] > peak) peak = this.freqData[b];
-
-      /* Tilt: highs carry far less energy than lows, so lift them to keep
-         the top of the spectrum visible. */
-      const tilt = 1 + 1.1 * (i / count);
-      let v = (peak / 255) * tilt * react.sensitivity;
-      if (i < count * 0.18) v *= react.bassBoost;
-      v = Math.max(0, Math.min(1, v));
-
-      const prev = this.bands[i];
-      this.bands[i] = v > prev ? prev + (v - prev) * attack : prev + (v - prev) * release;
-    }
+    out.wave = this.timeData;
 
     out.bass = Math.min(1, this._avgRange(20, 160) * react.bassBoost * react.sensitivity);
     out.mid = Math.min(1, this._avgRange(160, 2000) * react.sensitivity);
@@ -148,7 +128,51 @@ Viz.AudioEngine = class {
     }
     this.beatEnv *= 0.90;
     out.beatEnv = this.beatEnv;
-    out.bands = this.bands;
+    this._bandFrame++;
     return out;
+  }
+
+  /* Smoothed log-spaced bands at a given resolution. Each resolution keeps
+     its own smoothing state and is computed at most once per frame, so
+     layers sharing a band count share the work. */
+  bands(count) {
+    count = Math.max(2, Math.round(count));
+    if (!this.analyser) return this._empty || (this._empty = new Float32Array(0));
+
+    const cache = this._bandCache || (this._bandCache = new Map());
+    let entry = cache.get(count);
+    if (!entry) {
+      entry = { arr: new Float32Array(count), frame: -1 };
+      cache.set(count, entry);
+    }
+    if (entry.frame === this._bandFrame) return entry.arr;
+    entry.frame = this._bandFrame;
+
+    const react = this._react || { sensitivity: 1, smoothing: 0.7, bassBoost: 1 };
+    const arr = entry.arr;
+
+    /* Log-spaced bands: linear FFT bins crowd everything musical into the
+       left-hand few percent of the display, which looks dead. */
+    const fMin = 30, fMax = 16000, ratio = fMax / fMin;
+    const attack = 1 - react.smoothing * 0.6;
+    const release = 0.02 + (1 - react.smoothing) * 0.4;
+
+    for (let i = 0; i < count; i++) {
+      const b0 = this._bin(fMin * Math.pow(ratio, i / count));
+      const b1 = Math.max(this._bin(fMin * Math.pow(ratio, (i + 1) / count)), b0 + 1);
+      let peak = 0;
+      for (let b = b0; b < b1; b++) if (this.freqData[b] > peak) peak = this.freqData[b];
+
+      /* Tilt: highs carry far less energy than lows, so lift them to keep
+         the top of the spectrum visible. */
+      const tilt = 1 + 1.1 * (i / count);
+      let v = (peak / 255) * tilt * react.sensitivity;
+      if (i < count * 0.18) v *= react.bassBoost;
+      v = Math.max(0, Math.min(1, v));
+
+      const prev = arr[i];
+      arr[i] = v > prev ? prev + (v - prev) * attack : prev + (v - prev) * release;
+    }
+    return arr;
   }
 };

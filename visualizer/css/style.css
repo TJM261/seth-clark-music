@@ -266,6 +266,97 @@ input[type="range"]:disabled { opacity: 0.4; cursor: default; }
 .swatches { display: flex; gap: 6px; margin-bottom: 12px; }
 .swatches input[type="color"] { height: 28px; padding: 2px; }
 
+.sub {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 16px 0 9px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.layer-list { list-style: none; margin: 0 0 4px; padding: 0; }
+
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px 5px 4px 8px;
+  margin-bottom: 5px;
+}
+
+.layer-row[aria-selected="true"] { border-color: var(--accent); background: #22181179; }
+
+.layer-name {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  padding: 4px 0;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-row[aria-selected="false"] .layer-name { color: var(--muted); }
+.layer-row.off .layer-name { opacity: 0.45; text-decoration: line-through; }
+
+.layer-btn {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 3px;
+  cursor: pointer;
+  border-radius: 4px;
+  flex: none;
+}
+
+.layer-btn:hover { color: var(--text); background: #2b3039; }
+.layer-btn:disabled { opacity: 0.25; cursor: default; }
+
+.anchor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.anchor-grid button {
+  aspect-ratio: 16 / 9;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+}
+
+.anchor-grid button:hover { border-color: var(--accent); }
+
+.anchor-dot {
+  position: absolute;
+  width: 34%;
+  height: 34%;
+  border-radius: 2px;
+  background: var(--muted);
+  opacity: 0.55;
+}
+
+.anchor-grid button:hover .anchor-dot { background: var(--accent); opacity: 1; }
+
 .scene-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
