@@ -16,6 +16,9 @@ Viz.Renderer = class {
     this.logoImage = null;
     this.grainPattern = null;
     this.lastScene = null;
+    this._bgKey = null;
+    this._bgCanvas = null;
+    this._bgToken = 0;
     this.lastTime = 0;
     this.running = false;
     this.onFrame = null;
@@ -55,27 +58,85 @@ Viz.Renderer = class {
   }
 
   setImage(which, img) {
-    if (which === "bg") this.bgImage = img;
-    else this.logoImage = img;
+    if (which === "bg") {
+      this.bgImage = img;
+      this._bgToken++;
+      this._bgKey = null;
+    } else {
+      this.logoImage = img;
+    }
+  }
+
+  /* Compose the background image once per settings change and reuse it.
+     Scaling and blurring a full-resolution photo every frame is wasteful
+     and would show up as dropped frames in a recording. */
+  _composedBackground(w, h) {
+    const bg = this.state.bg;
+    const img = this.bgImage;
+    const key = [w, h, bg.fit, bg.zoom, bg.dim, bg.blur, this._bgToken].join("|");
+    if (this._bgKey === key && this._bgCanvas) return this._bgCanvas;
+
+    const c = this._bgCanvas || (this._bgCanvas = document.createElement("canvas"));
+    c.width = w;
+    c.height = h;
+    const g = c.getContext("2d");
+    g.fillStyle = "#000";
+    g.fillRect(0, 0, w, h);
+
+    const zoom = bg.zoom || 1;
+    let dw, dh;
+    if (bg.fit === "stretch") {
+      dw = w * zoom;
+      dh = h * zoom;
+    } else {
+      let scale;
+      if (bg.fit === "contain") scale = Math.min(w / img.width, h / img.height);
+      else if (bg.fit === "width") scale = w / img.width;
+      else scale = Math.max(w / img.width, h / img.height);
+      dw = img.width * scale * zoom;
+      dh = img.height * scale * zoom;
+    }
+
+    if (bg.blur > 0) {
+      /* Blur samples beyond the image, so overscan to avoid a soft dark
+         edge. Letterboxing is deliberate in `contain`, so leave it alone. */
+      if (bg.fit !== "contain") {
+        const f = Math.max((w + bg.blur * 4) / w, (h + bg.blur * 4) / h);
+        dw *= f;
+        dh *= f;
+      }
+      g.filter = `blur(${bg.blur}px)`;
+    }
+    g.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+    g.filter = "none";
+
+    if (bg.dim > 0) {
+      g.fillStyle = `rgba(0,0,0,${bg.dim})`;
+      g.fillRect(0, 0, w, h);
+    }
+
+    this._bgKey = key;
+    return c;
   }
 
   get colors() {
     return this.state.customColors || Viz.palettes[this.state.palette].colors;
   }
 
-  _drawBackground(ctx, w, h, alpha) {
+  _drawBackground(ctx, w, h, alpha, a) {
     const pal = Viz.palettes[this.state.palette];
     ctx.save();
     ctx.globalAlpha = alpha;
     const bg = this.state.bg;
 
     if (bg.mode === "image" && this.bgImage) {
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, w, h);
-      const img = this.bgImage;
-      const scale = Math.max(w / img.width, h / img.height);
-      const dw = img.width * scale, dh = img.height * scale;
-      ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      /* The composed cache is already opaque and covers the frame, so it is
+         drawn alone. Painting black underneath it would composite twice per
+         frame and, with motion trails on, hold the image well below its
+         true brightness. */
+      const pulse = bg.pulse && a ? 1 + a.beatEnv * 0.025 : 1;
+      const pw = w * pulse, ph = h * pulse;
+      ctx.drawImage(this._composedBackground(w, h), (w - pw) / 2, (h - ph) / 2, pw, ph);
     } else if (bg.mode === "solid") {
       ctx.fillStyle = bg.color;
       ctx.fillRect(0, 0, w, h);
@@ -214,7 +275,7 @@ Viz.Renderer = class {
     const fctx = this.fieldCtx;
     const trail = this.state.params.trail;
 
-    this._drawBackground(fctx, w, h, trail > 0 ? Math.max(0.05, 1 - trail) : 1);
+    this._drawBackground(fctx, w, h, trail > 0 ? Math.max(0.05, 1 - trail) : 1, a);
 
     const scene = Viz.scenes[this.state.scene] || Viz.scenes.bars;
     const sceneState = {

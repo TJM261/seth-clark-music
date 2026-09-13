@@ -74,6 +74,39 @@ Bands are spaced logarithmically between 30 Hz and 16 kHz, with a tilt that
 lifts the high end. Linear FFT bins would crowd everything musical into the
 left few percent of the screen.
 
+## Backgrounds
+
+Pick a background image and it fills the frame edge to edge — scenes, text
+and artwork all layer on top of it. Choosing a file switches the background
+mode for you; the **✕** next to the picker removes the image and drops back
+to the palette gradient.
+
+| Fit | What it does |
+| --- | --- |
+| **Fill frame** | Scales until the frame is covered, cropping the overflow. The default, and what you want almost always. |
+| **Full width** | Matches the image width to the frame width. For a 16:9 image in a 16:9 export this is identical to Fill frame; in a vertical export it letterboxes above and below. |
+| **Fit whole image** | Shows the entire image, letterboxing whatever is left over. |
+| **Stretch** | Forces the image to the frame exactly, distorting the aspect ratio. |
+
+A 16:9 image in a 16:9 export fills the frame exactly under every fit mode.
+The modes only diverge when the image and the export shape disagree — most
+obviously exporting a 16:9 photo to a 9:16 reel, where **Fill frame** crops
+the sides and **Fit whole image** letterboxes instead.
+
+- **Zoom** pushes in past the fit, for cropping tighter or hiding an edge.
+- **Dim** darkens the image so the visuals stay readable on top. Photos
+  usually need 30–60%; the default is 30%.
+- **Blur** softens it into a wash. It overscans slightly so no dark halo
+  creeps in at the edges.
+- **Pulse background on beat** nudges a slow zoom on each beat.
+
+The scaled, dimmed and blurred image is composed once and cached, so none of
+these cost anything per frame — they won't drop frames in a recording. It's
+recomposed only when you change a setting or the export size.
+
+Artwork (under **Overlay**) is a separate thing: a square cover-art badge
+placed in the frame, not a background. Its **✕** removes it too.
+
 ## Presets
 
 **Save** stores the current look under a name in your browser. Title and

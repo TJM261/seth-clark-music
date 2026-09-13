@@ -12,6 +12,10 @@
 
 * { box-sizing: border-box; }
 
+/* A class-level `display` outranks the UA rule for [hidden], and this app
+   toggles visibility through the attribute in several places. */
+[hidden] { display: none !important; }
+
 html, body {
   height: 100%;
   margin: 0;
@@ -207,6 +211,10 @@ input[type="range"]:disabled { opacity: 0.4; cursor: default; }
 .file-btn.small { padding: 8px 10px; font-size: 12px; }
 .file-btn.loaded { border-style: solid; color: var(--text); }
 
+.file-row { display: flex; gap: 6px; margin-bottom: 12px; }
+.file-row .file-btn { flex: 1; min-width: 0; margin-bottom: 0; }
+.btn.icon { padding: 8px 11px; flex: none; }
+
 .btn {
   background: var(--panel-2);
   border: 1px solid var(--line);
@@ -344,7 +352,6 @@ input[type="range"]:disabled { opacity: 0.4; cursor: default; }
 
 .dropzone strong { display: block; font-size: 17px; color: var(--text); margin-bottom: 6px; }
 .dropzone span { font-size: 12px; }
-.dropzone[hidden] { display: none; }
 .stage-inner.dragging .dropzone { border-color: var(--accent); display: flex; }
 
 .rec-badge {
@@ -365,8 +372,6 @@ input[type="range"]:disabled { opacity: 0.4; cursor: default; }
 
 .rec-badge b { font-variant-numeric: tabular-nums; font-weight: 600; }
 
-/* A class-level `display` outranks the UA rule for [hidden], so restate it. */
-.rec-badge[hidden] { display: none; }
 
 .transport {
   display: flex;

@@ -10,7 +10,11 @@
     customColors: null,
     params: { count: 96, thickness: 0.6, trail: 0.25, glow: 0.5, rotate: 0.1, mirror: true },
     react: { sensitivity: 1.1, smoothing: 0.72, bassBoost: 1.25, beatSens: 1.35 },
-    bg: { mode: "gradient", color: "#07080b", imageData: null, vignette: 0.45, grain: 0.05 },
+    bg: {
+      mode: "gradient", color: "#07080b", imageData: null,
+      fit: "cover", zoom: 1, dim: 0.3, blur: 0, pulse: false,
+      vignette: 0.45, grain: 0.05
+    },
     overlay: {
       showText: true, title: "", artist: "", size: 1, pos: "bottom-left",
       logoData: null, logoPos: "none", logoSize: 0.28, logoPulse: true
@@ -174,6 +178,8 @@
         apply(reader.result);
         labelEl.textContent = file.name;
         labelEl.parentElement.classList.add("loaded");
+        /* Clear the input so picking the same file again still fires. */
+        input.value = "";
         save();
       };
       reader.readAsDataURL(file);
@@ -287,13 +293,48 @@
     syncFns.forEach((fn) => fn());
     loadImageData(state.bg.imageData, "bg");
     loadImageData(state.overlay.logoData, "logo");
+    paintImageLabels();
     updateBgFields();
     applyExportSize();
   }
 
   function updateBgFields() {
     $("bgColorField").hidden = state.bg.mode !== "solid";
-    $("bgImageField").hidden = state.bg.mode !== "image";
+    $("bgImageOpts").hidden = state.bg.mode !== "image";
+  }
+
+  function paintImageLabel(labelEl, data, placeholder, loadedText) {
+    labelEl.textContent = data ? loadedText : placeholder;
+    labelEl.parentElement.classList.toggle("loaded", !!data);
+  }
+
+  function paintImageLabels() {
+    paintImageLabel($("bgImageLabel"), state.bg.imageData, "Choose background image…", "Background image loaded");
+    paintImageLabel($("ovLogoLabel"), state.overlay.logoData, "Choose cover art / logo…", "Artwork loaded");
+  }
+
+  function clearBgImage() {
+    state.bg.imageData = null;
+    renderer.setImage("bg", null);
+    $("bgImage").value = "";
+    /* An image background with no image would render as flat black. */
+    if (state.bg.mode === "image") {
+      state.bg.mode = "gradient";
+      $("bgMode").value = "gradient";
+    }
+    paintImageLabels();
+    updateBgFields();
+    save();
+  }
+
+  function clearLogo() {
+    state.overlay.logoData = null;
+    renderer.setImage("logo", null);
+    $("ovLogo").value = "";
+    state.overlay.logoPos = "none";
+    $("ovLogoPos").value = "none";
+    paintImageLabels();
+    save();
   }
 
   function applyExportSize() {
@@ -316,6 +357,11 @@
 
     bind("bgMode", () => state.bg.mode, (v) => (state.bg.mode = v), { after: updateBgFields });
     bind("bgColor", () => state.bg.color, (v) => (state.bg.color = v));
+    bind("bgFit", () => state.bg.fit, (v) => (state.bg.fit = v));
+    bind("bgZoom", () => state.bg.zoom, (v) => (state.bg.zoom = v), { label: "vBgZoom", fmt: (v) => v.toFixed(2) + "×" });
+    bind("bgDim", () => state.bg.dim, (v) => (state.bg.dim = v), { label: "vBgDim", fmt: pct });
+    bind("bgBlur", () => state.bg.blur, (v) => (state.bg.blur = v), { label: "vBgBlur", fmt: (v) => Math.round(v) + "px" });
+    bind("bgPulse", () => state.bg.pulse, (v) => (state.bg.pulse = v));
     bind("bgVignette", () => state.bg.vignette, (v) => (state.bg.vignette = v), { label: "vVignette", fmt: pct });
     bind("bgGrain", () => state.bg.grain, (v) => (state.bg.grain = v), { label: "vGrain", fmt: pct });
 
@@ -462,7 +508,16 @@
     handleImageInput($("bgImage"), $("bgImageLabel"), (data) => {
       state.bg.imageData = data;
       loadImageData(data, "bg");
+      /* Picking an image is the whole intent, so switch the mode too rather
+         than leaving it silently inert behind the dropdown. */
+      if (state.bg.mode !== "image") {
+        state.bg.mode = "image";
+        $("bgMode").value = "image";
+        updateBgFields();
+      }
     });
+    $("bgImageClear").addEventListener("click", clearBgImage);
+    $("ovLogoClear").addEventListener("click", clearLogo);
     handleImageInput($("ovLogo"), $("ovLogoLabel"), (data) => {
       state.overlay.logoData = data;
       loadImageData(data, "logo");

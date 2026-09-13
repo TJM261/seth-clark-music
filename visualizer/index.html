@@ -84,10 +84,39 @@
           <span>Colour</span>
           <input type="color" id="bgColor">
         </label>
-        <label class="file-btn small" id="bgImageField" hidden>
-          <input type="file" id="bgImage" accept="image/*" hidden>
-          <span id="bgImageLabel">Choose background image…</span>
-        </label>
+        <div id="bgImageOpts" hidden>
+          <div class="file-row">
+            <label class="file-btn small">
+              <input type="file" id="bgImage" accept="image/*" hidden>
+              <span id="bgImageLabel">Choose background image…</span>
+            </label>
+            <button class="btn ghost icon" id="bgImageClear" type="button" title="Remove background image">✕</button>
+          </div>
+          <label class="field">
+            <span>Fit</span>
+            <select id="bgFit">
+              <option value="cover">Fill frame — crop overflow</option>
+              <option value="width">Full width — crop height</option>
+              <option value="contain">Fit whole image — letterbox</option>
+              <option value="stretch">Stretch to frame</option>
+            </select>
+          </label>
+          <label class="field range">
+            <span>Zoom <b id="vBgZoom"></b></span>
+            <input type="range" id="bgZoom" min="1" max="2.5" step="0.01">
+          </label>
+          <label class="field range">
+            <span>Dim <b id="vBgDim"></b></span>
+            <input type="range" id="bgDim" min="0" max="0.9" step="0.01">
+          </label>
+          <label class="field range">
+            <span>Blur <b id="vBgBlur"></b></span>
+            <input type="range" id="bgBlur" min="0" max="40" step="1">
+          </label>
+          <label class="check">
+            <input type="checkbox" id="bgPulse"><span>Pulse background on beat</span>
+          </label>
+        </div>
         <label class="field range">
           <span>Vignette <b id="vVignette"></b></span>
           <input type="range" id="bgVignette" min="0" max="1" step="0.01">
@@ -140,10 +169,13 @@
           <span>Text size <b id="vOvSize"></b></span>
           <input type="range" id="ovSize" min="0.5" max="2.5" step="0.01">
         </label>
-        <label class="file-btn small">
-          <input type="file" id="ovLogo" accept="image/*" hidden>
-          <span id="ovLogoLabel">Choose cover art / logo…</span>
-        </label>
+        <div class="file-row">
+          <label class="file-btn small">
+            <input type="file" id="ovLogo" accept="image/*" hidden>
+            <span id="ovLogoLabel">Choose cover art / logo…</span>
+          </label>
+          <button class="btn ghost icon" id="ovLogoClear" type="button" title="Remove artwork">✕</button>
+        </div>
         <label class="field">
           <span>Artwork</span>
           <select id="ovLogoPos">
