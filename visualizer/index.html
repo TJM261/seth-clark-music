@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visualizer Studio</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <header class="brand">
+      <span class="brand-mark"></span>
+      <h1>Visualizer Studio</h1>
+    </header>
+
+    <section class="panel" data-open="true">
+      <button class="panel-head" type="button">Track</button>
+      <div class="panel-body">
+        <label class="file-btn">
+          <input type="file" id="audioFile" accept="audio/*" hidden>
+          <span id="audioFileLabel">Choose an audio file…</span>
+        </label>
+        <label class="field">
+          <span>Title</span>
+          <input type="text" id="ovTitle" placeholder="Track title">
+        </label>
+        <label class="field">
+          <span>Artist</span>
+          <input type="text" id="ovArtist" placeholder="Artist name">
+        </label>
+      </div>
+    </section>
+
+    <section class="panel" data-open="true">
+      <button class="panel-head" type="button">Layers</button>
+      <div class="panel-body">
+        <div class="row">
+          <select id="addScene"></select>
+          <button class="btn" id="addLayer" type="button">Add</button>
+        </div>
+        <ul class="layer-list" id="layerList"></ul>
+        <p class="hint" id="noLayerHint" hidden>No layers yet — add one above.</p>
+
+        <div id="layerEditor">
+          <label class="field">
+            <span>Scene</span>
+            <select id="lscene"></select>
+          </label>
+          <div class="sub">Placement</div>
+          <div class="anchor-grid" id="anchorGrid"></div>
+          <label class="field range">
+            <span>Horizontal <b id="vLx"></b></span>
+            <input type="range" id="lx" min="-0.25" max="1.25" step="0.005">
+          </label>
+          <label class="field range">
+            <span>Vertical <b id="vLy"></b></span>
+            <input type="range" id="ly" min="-0.25" max="1.25" step="0.005">
+          </label>
+          <label class="field range">
+            <span>Width <b id="vLw"></b></span>
+            <input type="range" id="lw" min="0.05" max="2" step="0.01">
+          </label>
+          <label class="field range">
+            <span>Height <b id="vLh"></b></span>
+            <input type="range" id="lh" min="0.05" max="2" step="0.01">
+          </label>
+          <label class="check">
+            <input type="checkbox" id="lLock"><span>Lock width &amp; height together</span>
+          </label>
+          <label class="field range">
+            <span>Rotation <b id="vLrot"></b></span>
+            <input type="range" id="lrot" min="-180" max="180" step="1">
+          </label>
+          <label class="field range">
+            <span>Opacity <b id="vLop"></b></span>
+            <input type="range" id="lop" min="0" max="1" step="0.01">
+          </label>
+          <label class="field">
+            <span>Blend</span>
+            <select id="lblend"></select>
+          </label>
+
+          <div class="sub">Look</div>
+          <label class="field range">
+            <span>Detail <b id="vCount"></b></span>
+            <input type="range" id="pCount" min="16" max="256" step="1">
+          </label>
+          <label class="field range">
+            <span>Thickness <b id="vThickness"></b></span>
+            <input type="range" id="pThickness" min="0.05" max="1" step="0.01">
+          </label>
+          <label class="field range">
+            <span>Glow <b id="vGlow"></b></span>
+            <input type="range" id="pGlow" min="0" max="1" step="0.01">
+          </label>
+          <label class="field range">
+            <span>Spin <b id="vSpin"></b></span>
+            <input type="range" id="pSpin" min="-1" max="1" step="0.01">
+          </label>
+          <label class="check">
+            <input type="checkbox" id="pMirror"><span>Mirror</span>
+          </label>
+
+          <div class="sub" id="sceneOptsHead">Scene options</div>
+          <div id="sceneOpts"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <button class="panel-head" type="button">Look</button>
+      <div class="panel-body">
+        <label class="field">
+          <span>Palette</span>
+          <select id="paletteSel"></select>
+        </label>
+        <div class="swatches" id="swatches"></div>
+        <label class="field">
+          <span>Background</span>
+          <select id="bgMode">
+            <option value="gradient">Palette gradient</option>
+            <option value="solid">Solid</option>
+            <option value="image">Image</option>
+          </select>
+        </label>
+        <label class="field" id="bgColorField" hidden>
+          <span>Colour</span>
+          <input type="color" id="bgColor">
+        </label>
+        <div id="bgImageOpts" hidden>
+          <div class="file-row">
+            <label class="file-btn small">
+              <input type="file" id="bgImage" accept="image/*" hidden>
+              <span id="bgImageLabel">Choose background image…</span>
+            </label>
+            <button class="btn ghost icon" id="bgImageClear" type="button" title="Remove background image">✕</button>
+          </div>
+          <label class="field">
+            <span>Fit</span>
+            <select id="bgFit">
+              <option value="cover">Fill frame — crop overflow</option>
+              <option value="width">Full width — crop height</option>
+              <option value="contain">Fit whole image — letterbox</option>
+              <option value="stretch">Stretch to frame</option>
+            </select>
+          </label>
+          <label class="field range">
+            <span>Zoom <b id="vBgZoom"></b></span>
+            <input type="range" id="bgZoom" min="1" max="2.5" step="0.01">
+          </label>
+          <label class="field range">
+            <span>Dim <b id="vBgDim"></b></span>
+            <input type="range" id="bgDim" min="0" max="0.9" step="0.01">
+          </label>
+          <label class="field range">
+            <span>Blur <b id="vBgBlur"></b></span>
+            <input type="range" id="bgBlur" min="0" max="40" step="1">
+          </label>
+          <label class="check">
+            <input type="checkbox" id="bgPulse"><span>Pulse background on beat</span>
+          </label>
+        </div>
+        <label class="field range">
+          <span>Motion trail <b id="vTrail"></b></span>
+          <input type="range" id="gTrail" min="0" max="0.94" step="0.01">
+        </label>
+        <label class="field range">
+          <span>Vignette <b id="vVignette"></b></span>
+          <input type="range" id="bgVignette" min="0" max="1" step="0.01">
+        </label>
+        <label class="field range">
+          <span>Grain <b id="vGrain"></b></span>
+          <input type="range" id="bgGrain" min="0" max="0.4" step="0.005">
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <button class="panel-head" type="button">Reactivity</button>
+      <div class="panel-body">
+        <label class="field range">
+          <span>Sensitivity <b id="vSens"></b></span>
+          <input type="range" id="rSens" min="0.2" max="3" step="0.01">
+        </label>
+        <label class="field range">
+          <span>Smoothing <b id="vSmooth"></b></span>
+          <input type="range" id="rSmooth" min="0" max="0.95" step="0.01">
+        </label>
+        <label class="field range">
+          <span>Bass boost <b id="vBass"></b></span>
+          <input type="range" id="rBass" min="0.5" max="3" step="0.01">
+        </label>
+        <label class="field range">
+          <span>Beat sensitivity <b id="vBeat"></b></span>
+          <input type="range" id="rBeat" min="1.05" max="2" step="0.01">
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <button class="panel-head" type="button">Overlay</button>
+      <div class="panel-body">
+        <label class="check">
+          <input type="checkbox" id="ovShow"><span>Show title &amp; artist</span>
+        </label>
+        <label class="field">
+          <span>Position</span>
+          <select id="ovPos">
+            <option value="bottom-left">Bottom left</option>
+            <option value="bottom-center">Bottom centre</option>
+            <option value="top-left">Top left</option>
+            <option value="center">Centre</option>
+          </select>
+        </label>
+        <label class="field range">
+          <span>Text size <b id="vOvSize"></b></span>
+          <input type="range" id="ovSize" min="0.5" max="2.5" step="0.01">
+        </label>
+        <div class="file-row">
+          <label class="file-btn small">
+            <input type="file" id="ovLogo" accept="image/*" hidden>
+            <span id="ovLogoLabel">Choose cover art / logo…</span>
+          </label>
+          <button class="btn ghost icon" id="ovLogoClear" type="button" title="Remove artwork">✕</button>
+        </div>
+        <label class="field">
+          <span>Artwork</span>
+          <select id="ovLogoPos">
+            <option value="none">Hidden</option>
+            <option value="center">Centre</option>
+            <option value="above-text">Next to text</option>
+            <option value="top-right">Top right</option>
+          </select>
+        </label>
+        <label class="field range">
+          <span>Artwork size <b id="vLogoSize"></b></span>
+          <input type="range" id="ovLogoSize" min="0.05" max="0.6" step="0.005">
+        </label>
+        <label class="check">
+          <input type="checkbox" id="ovLogoPulse"><span>Pulse artwork on beat</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <button class="panel-head" type="button">Export</button>
+      <div class="panel-body">
+        <label class="field">
+          <span>Format</span>
+          <select id="exSize">
+            <option value="1920x1080">YouTube — 1920 × 1080 (16:9)</option>
+            <option value="1080x1080">Square — 1080 × 1080 (1:1)</option>
+            <option value="1080x1920">Reels / Stories — 1080 × 1920 (9:16)</option>
+            <option value="1080x1350">Feed — 1080 × 1350 (4:5)</option>
+            <option value="1280x720">Draft — 1280 × 720 (16:9)</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Frame rate</span>
+          <select id="exFps">
+            <option value="60">60 fps</option>
+            <option value="30">30 fps</option>
+          </select>
+        </label>
+        <button class="btn record" id="recordBtn" type="button">
+          <span class="rec-dot"></span><span id="recordLabel">Record video</span>
+        </button>
+        <p class="hint" id="recordHint">Records in real time, from the start of the track.</p>
+        <div id="downloads" class="downloads"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <button class="panel-head" type="button">Presets</button>
+      <div class="panel-body">
+        <div class="row">
+          <input type="text" id="presetName" placeholder="Preset name">
+          <button class="btn" id="presetSave" type="button">Save</button>
+        </div>
+        <div class="row">
+          <select id="presetList"></select>
+          <button class="btn" id="presetLoad" type="button">Load</button>
+          <button class="btn ghost" id="presetDelete" type="button">Delete</button>
+        </div>
+        <button class="btn ghost wide" id="presetReset" type="button">Reset to defaults</button>
+      </div>
+    </section>
+  </aside>
+
+  <main class="stage">
+    <div class="stage-inner" id="stageInner">
+      <canvas id="viz"></canvas>
+      <div class="dropzone" id="dropzone">
+        <div>
+          <strong>Drop a track here</strong>
+          <span>MP3, WAV, FLAC, M4A — nothing leaves your computer</span>
+        </div>
+      </div>
+      <div class="rec-badge" id="recBadge" hidden><span class="rec-dot"></span>REC <b id="recTime">0:00</b></div>
+    </div>
+
+    <div class="transport">
+      <button class="btn play" id="playBtn" type="button" disabled aria-label="Play">▶</button>
+      <span class="time" id="curTime">0:00</span>
+      <input type="range" id="seek" min="0" max="1000" value="0" step="1" disabled>
+      <span class="time" id="durTime">0:00</span>
+      <label class="vol">
+        <span aria-hidden="true">♪</span>
+        <input type="range" id="volume" min="0" max="1" step="0.01" value="1">
+      </label>
+      <button class="btn ghost" id="fullBtn" type="button">Fullscreen</button>
+    </div>
+  </main>
+
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/palettes.js"></script>
+<script src="js/layers.js"></script>
+<script src="js/audio-engine.js"></script>
+<script src="js/scenes/bars.js"></script>
+<script src="js/scenes/radial.js"></script>
+<script src="js/scenes/wave.js"></script>
+<script src="js/scenes/particles.js"></script>
+<script src="js/scenes/rings.js"></script>
+<script src="js/scenes/frame.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/recorder.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
