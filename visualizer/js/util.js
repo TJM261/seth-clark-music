@@ -69,3 +69,33 @@ Viz.orient = function (ctx, w, h, dir) {
       return [w, h];
   }
 };
+
+/* Canvas 2D filters (used for background blur) arrived late in Safari.
+   Setting the property is silently ignored where unsupported, so probe it
+   by reading the value back rather than trusting the assignment. */
+Viz.supportsCanvasFilter = function () {
+  try {
+    const c = document.createElement("canvas").getContext("2d");
+    c.filter = "blur(2px)";
+    return c.filter === "blur(2px)";
+  } catch (e) {
+    return false;
+  }
+};
+
+/* Fullscreen, with the prefixed spellings older Safari still needs. */
+Viz.fullscreenElement = function () {
+  return document.fullscreenElement || document.webkitFullscreenElement ||
+    document.webkitCurrentFullScreenElement || null;
+};
+
+Viz.requestFullscreen = function (el) {
+  const fn = el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen;
+  if (fn) try { fn.call(el); } catch (e) { /* user gesture required */ }
+};
+
+Viz.exitFullscreen = function () {
+  const fn = document.exitFullscreen || document.webkitExitFullscreen ||
+    document.webkitCancelFullScreen;
+  if (fn) try { fn.call(document); } catch (e) { /* already exited */ }
+};

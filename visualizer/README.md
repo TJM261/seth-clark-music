@@ -17,6 +17,45 @@ but their canvas recording is patchier and neither can write MP4 here.
 Your audio never leaves your computer. The file is read straight off disk by
 the browser, so there is nothing to upload and nothing is sent anywhere.
 
+## On a Mac
+
+Nothing to install and nothing to configure. Unzip the folder anywhere —
+Desktop, Documents, wherever — and double-click `index.html`.
+
+macOS will not warn you or block it. Gatekeeper only challenges executables,
+and this is a plain web page, so there is no "unidentified developer" prompt
+and nothing to allow in System Settings.
+
+**Open it in Chrome, not Safari.** Double-clicking uses whatever your default
+browser is, which on a Mac is usually Safari. To be sure, right-click
+`index.html` → **Open With** → **Google Chrome**. Once open, bookmark it or
+keep the tab; it reloads from disk like any page.
+
+Why Chrome rather than Safari on a Mac:
+
+| | Chrome / Edge | Safari |
+| --- | --- | --- |
+| Preview and playback | Yes | Yes |
+| Recording video | Yes | Unreliable — canvas recording has long-standing bugs |
+| MP4 export | Yes | Sometimes |
+| Background blur | Yes | Only on recent versions |
+
+The app adapts where it can: it uses Safari's prefixed fullscreen and audio
+APIs, and if the browser cannot blur canvas content the Blur slider disables
+itself and says "unsupported" rather than silently doing nothing. Recording
+is the part that genuinely needs Chrome.
+
+Apple Silicon and Intel Macs behave identically here — it is all standard web
+APIs, with no native code and no architecture-specific anything.
+
+A Retina display costs you nothing: the canvas always renders at the export
+resolution you picked, so a 1920 × 1080 export is a true 1920 × 1080 whatever
+the screen is doing.
+
+**Where your files go.** Recordings land in your normal Downloads folder. The
+track you drop in is only ever read from disk — it is not copied, moved, or
+uploaded anywhere.
+
 ## Making a video
 
 1. Drag an audio file onto the stage (MP3, WAV, FLAC, M4A, OGG).

@@ -492,7 +492,13 @@
 
     engine.currentTime = 0;
     try { await engine.play(); } catch (e) { alert("Could not start playback."); return; }
-    try { recorder.start(state.fps, state.format); } catch (e) { alert(e.message); engine.pause(); return; }
+    try {
+      recorder.start(state.fps, state.format);
+    } catch (e) {
+      engine.pause();
+      alert(e.message + "\n\nIf you are in Safari, try Chrome or Edge — their canvas recording is more reliable.");
+      return;
+    }
 
     recordingStopping = false;
     $("recordBtn").classList.add("armed");
@@ -548,6 +554,21 @@
     refreshLayerUI();
     paintAllRanges();
     paintStageBadge();
+    /* Last: refreshLayerUI repaints every bound label, which would
+       otherwise overwrite the "unsupported" note. */
+    paintBlurSupport();
+  }
+
+  /* Background blur needs canvas filters; say so rather than moving a
+     slider that quietly does nothing. */
+  function paintBlurSupport() {
+    if (Viz.supportsCanvasFilter()) return;
+    const el = $("bgBlur");
+    el.disabled = true;
+    el.value = 0;
+    state.bg.blur = 0;
+    $("vBgBlur").textContent = "unsupported";
+    $("vBgBlur").title = "This browser cannot blur canvas content.";
   }
 
   /* MP4 is only offered when the browser can really encode H.264. */
@@ -780,9 +801,8 @@
     $("volume").addEventListener("input", (e) => engine.setVolume(parseFloat(e.target.value)));
 
     $("fullBtn").addEventListener("click", () => {
-      const el = $("stageInner");
-      if (document.fullscreenElement) document.exitFullscreen();
-      else if (el.requestFullscreen) el.requestFullscreen();
+      if (Viz.fullscreenElement()) Viz.exitFullscreen();
+      else Viz.requestFullscreen($("stageInner"));
     });
 
     document.addEventListener("keydown", (e) => {

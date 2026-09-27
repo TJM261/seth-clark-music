@@ -573,14 +573,20 @@ input[type="range"]:disabled { opacity: 0.4; cursor: default; }
 
 /* ---------- fullscreen ---------- */
 
-#stageInner:fullscreen {
+#stageInner:fullscreen,
+#stageInner:-webkit-full-screen {
   padding: 0;
   background: #000;
 }
 
-#stageInner:fullscreen #viz {
+#stageInner:fullscreen #viz,
+#stageInner:-webkit-full-screen #viz {
   border-radius: 0;
   box-shadow: none;
 }
 
-#stageInner:fullscreen .dropzone { inset: 0; border: 0; }
+#stageInner:fullscreen .dropzone,
+#stageInner:-webkit-full-screen .dropzone { inset: 0; border: 0; }
+
+#stageInner:fullscreen .stage-badge,
+#stageInner:-webkit-full-screen .stage-badge { display: none; }
