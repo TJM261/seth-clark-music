@@ -8,17 +8,14 @@ no dependencies. Your audio never leaves your computer.
 
 ## Running it
 
-Double-click `index.html`, or open it in a browser. That's it.
+Double-click `index.html`. It opens in your browser and runs entirely on your
+machine — no install, no build step, no server, no internet connection.
 
-If you'd rather serve it (needed if you later add ES modules or fetch data):
+Chrome or Edge are the best choice. Safari and Firefox play and preview fine,
+but their canvas recording is patchier and neither can write MP4 here.
 
-```sh
-cd visualizer
-python3 -m http.server 8000   # then open http://localhost:8000
-```
-
-Chrome or Edge are the best choice — Safari and Firefox can play and preview
-fine, but their canvas recording support is patchier.
+Your audio never leaves your computer. The file is read straight off disk by
+the browser, so there is nothing to upload and nothing is sent anywhere.
 
 ## Making a video
 
@@ -35,17 +32,34 @@ fine, but their canvas recording support is patchier.
 **Keep the tab visible and in the foreground while recording.** Browsers
 throttle animation in background tabs, which drops frames in the capture.
 
-### About the exported file
+### Choosing a format
 
-You get a `.webm` (VP9 video + Opus audio). YouTube accepts this directly.
-Instagram and most editors want MP4, and WebM from a browser recorder carries
-no duration header, which makes some editors scrub badly. Both are fixed by
-one conversion:
+Under **Export**, pick the file format:
+
+- **MP4 (H.264 + AAC)** — plays everywhere and imports straight into editors
+  and phones. Pick this unless you have a reason not to.
+- **WebM (VP9 + Opus)** — smaller for the same quality, and accepted directly
+  by YouTube, but many editors will not open it.
+
+MP4 is offered only when the browser can genuinely encode H.264. Chrome and
+Edge on macOS and Windows can; Chromium builds on Linux usually cannot,
+because they ship without the patent-encumbered codecs. Where it is
+unavailable the option is greyed out and says so.
+
+That check is deliberately strict. Chrome will answer "yes, I support
+video/mp4" and then hand back an MP4 container with VP9 inside it — a file
+that plays in a browser but that QuickTime, Premiere and most phones refuse
+to open. Rather than produce one of those, the app offers WebM.
+
+If you are stuck with WebM and need MP4, convert it once:
 
 ```sh
 ffmpeg -i visualizer.webm -c:v libx264 -crf 18 -preset slow \
        -pix_fmt yuv420p -c:a aac -b:a 320k visualizer.mp4
 ```
+
+That is also worth doing for a WebM you plan to edit: browser-recorded WebM
+carries no duration header, which makes some editors scrub badly.
 
 Monitor volume is tapped *after* the analyser, so you can turn your speakers
 down — or all the way off — while recording without changing the level in the

@@ -67,6 +67,15 @@ html, body {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
 }
 
+.sidebar::-webkit-scrollbar { width: 10px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb {
+  background: #2b3039;
+  border: 3px solid var(--panel);
+  border-radius: 6px;
+}
+.sidebar::-webkit-scrollbar-thumb:hover { background: #3a4150; }
+
 .panel { border-bottom: 1px solid var(--line); }
 
 .panel-head {
@@ -88,13 +97,19 @@ html, body {
 }
 
 .panel-head::after {
-  content: "+";
-  font-size: 14px;
-  color: var(--muted);
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg) translate(-2px, 0);
+  transition: transform 0.18s ease;
+  opacity: 0.8;
 }
 
+.panel-head:hover { color: var(--text); }
 .panel[data-open="true"] .panel-head { color: var(--text); }
-.panel[data-open="true"] .panel-head::after { content: "–"; }
+.panel[data-open="true"] .panel-head::after { transform: rotate(45deg) translate(-2px, -2px); }
 
 .panel-body { display: none; padding: 2px 16px 18px; }
 .panel[data-open="true"] .panel-body { display: block; }
@@ -151,7 +166,9 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
-  background: var(--line);
+  /* --fill is set from JS so the travelled part of the track is coloured. */
+  background: linear-gradient(to right,
+    var(--accent) var(--fill, 0%), var(--line) var(--fill, 0%));
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -162,12 +179,18 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 50%;
   background: var(--text);
   border: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  transition: transform 0.12s ease;
 }
+
+input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.18); }
+input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.05); }
 
 input[type="range"]::-moz-range-track {
   height: 4px;
   border-radius: 2px;
-  background: var(--line);
+  background: linear-gradient(to right,
+    var(--accent) var(--fill, 0%), var(--line) var(--fill, 0%));
 }
 
 input[type="range"]::-moz-range-thumb {
@@ -227,7 +250,8 @@ input[type="range"]:disabled { opacity: 0.4; cursor: default; }
   white-space: nowrap;
 }
 
-.btn:hover { border-color: #3a404b; }
+.btn { transition: border-color 0.12s ease, background 0.12s ease; }
+.btn:hover:not(:disabled) { border-color: #3a404b; background: #1e222a; }
 .btn.ghost { color: var(--muted); }
 .btn.wide { width: 100%; }
 .btn:disabled { opacity: 0.4; cursor: default; }
@@ -441,8 +465,21 @@ input[type="range"]:disabled { opacity: 0.4; cursor: default; }
   pointer-events: none;
 }
 
-.dropzone strong { display: block; font-size: 17px; color: var(--text); margin-bottom: 6px; }
-.dropzone span { font-size: 12px; }
+.dropzone strong { display: block; font-size: 18px; color: var(--text); margin-bottom: 8px; }
+.dropzone span { font-size: 12px; display: block; }
+.dropzone .keys { margin-top: 18px; font-size: 11px; opacity: 0.75; }
+.dropzone kbd {
+  display: inline-block;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font: inherit;
+  font-size: 10px;
+  color: var(--text);
+  margin: 0 2px;
+}
 .stage-inner.dragging .dropzone { border-color: var(--accent); display: flex; }
 
 .rec-badge {
@@ -474,13 +511,40 @@ input[type="range"]:disabled { opacity: 0.4; cursor: default; }
 }
 
 .transport .btn.play {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   padding: 0;
   font-size: 14px;
   flex: none;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #180d06;
+  transition: transform 0.12s ease, filter 0.12s ease;
 }
+
+.transport .btn.play:hover:not(:disabled) { filter: brightness(1.1); transform: scale(1.05); }
+.transport .btn.play:disabled { background: var(--panel-2); border-color: var(--line); color: var(--muted); }
+
+.stage-badge {
+  position: absolute;
+  top: 34px;
+  right: 34px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  background: rgba(11, 12, 15, 0.72);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 9px;
+  pointer-events: none;
+}
+
+.stage-badge b { color: var(--text); font-weight: 500; }
+.stage-badge span { opacity: 0.4; }
 
 .transport #seek { flex: 1; }
 

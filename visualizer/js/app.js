@@ -21,7 +21,8 @@
       logoData: null, logoPos: "none", logoSize: 0.28, logoPulse: true
     },
     exportSize: "1920x1080",
-    fps: 60
+    fps: 60,
+    format: "webm"
   });
 
   let state = defaults();
@@ -112,6 +113,32 @@
     paint();
   }
 
+  /* Colour the travelled portion of every slider. */
+  function paintRange(el) {
+    const min = parseFloat(el.min) || 0;
+    const max = parseFloat(el.max);
+    const span = (isNaN(max) ? 100 : max) - min;
+    const v = parseFloat(el.value) || 0;
+    el.style.setProperty("--fill", (span ? ((v - min) / span) * 100 : 0) + "%");
+  }
+
+  function paintAllRanges() {
+    document.querySelectorAll('input[type="range"]').forEach(paintRange);
+  }
+
+  document.addEventListener("input", (e) => {
+    if (e.target && e.target.type === "range") paintRange(e.target);
+  }, true);
+
+  function paintStageBadge() {
+    const [w, h] = state.exportSize.split("x");
+    const g = (a, b) => (b ? g(b, a % b) : a);
+    const d = g(Number(w), Number(h));
+    $("stageBadge").innerHTML =
+      `<b>${w}×${h}</b><span>·</span>${Number(w) / d}:${Number(h) / d}` +
+      `<span>·</span>${state.fps} fps<span>·</span>${state.format.toUpperCase()}`;
+  }
+
   const pct = (v) => Math.round(v * 100) + "%";
   const deg = (v) => Math.round(v) + "°";
   const mult = (v) => Number(v).toFixed(2) + "×";
@@ -137,6 +164,7 @@
     renderLayerList();
     syncFns.forEach((fn) => fn());
     buildSceneOpts();
+    paintAllRanges();
     const has = !!L();
     $("layerEditor").hidden = !has;
     $("noLayerHint").hidden = has;
@@ -464,7 +492,7 @@
 
     engine.currentTime = 0;
     try { await engine.play(); } catch (e) { alert("Could not start playback."); return; }
-    try { recorder.start(state.fps); } catch (e) { alert(e.message); return; }
+    try { recorder.start(state.fps, state.format); } catch (e) { alert(e.message); engine.pause(); return; }
 
     recordingStopping = false;
     $("recordBtn").classList.add("armed");
@@ -498,7 +526,7 @@
 
     const [w, h] = state.exportSize.split("x");
     const base = (state.overlay.title || "visualizer").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const ext = blob.type.includes("mp4") ? "mp4" : "webm";
+    const ext = recorder.extension;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `${base || "visualizer"}-${w}x${h}.${ext}`;
@@ -515,8 +543,33 @@
     loadImageData(state.overlay.logoData, "logo");
     paintImageLabels();
     updateBgFields();
+    paintFormatHint();
     applyExportSize();
     refreshLayerUI();
+    paintAllRanges();
+    paintStageBadge();
+  }
+
+  /* MP4 is only offered when the browser can really encode H.264. */
+  function paintFormatHint() {
+    const mp4 = Viz.Recorder.mp4Mime();
+    const opt = document.querySelector('#exFormat option[value="mp4"]');
+    if (opt) {
+      opt.disabled = !mp4;
+      opt.textContent = mp4 ? "MP4 — H.264 + AAC" : "MP4 — not available in this browser";
+    }
+    if (!mp4 && state.format === "mp4") {
+      state.format = "webm";
+      $("exFormat").value = "webm";
+    }
+    const hint = $("formatHint");
+    if (state.format === "mp4") {
+      hint.textContent = "MP4 plays everywhere and imports straight into editors.";
+    } else if (mp4) {
+      hint.textContent = "WebM is smaller; switch to MP4 for editors and phones.";
+    } else {
+      hint.textContent = "This browser can only record WebM. Chrome or Edge on macOS or Windows can record MP4; otherwise convert afterwards (see the README).";
+    }
   }
 
   function updateBgFields() {
@@ -624,8 +677,13 @@
     bind("ovLogoSize", () => state.overlay.logoSize, (v) => (state.overlay.logoSize = v), { label: "vLogoSize", fmt: pct });
     bind("ovLogoPulse", () => state.overlay.logoPulse, (v) => (state.overlay.logoPulse = v));
 
-    bind("exSize", () => state.exportSize, (v) => (state.exportSize = v), { after: applyExportSize });
-    bind("exFps", () => String(state.fps), (v) => (state.fps = Number(v)));
+    bind("exSize", () => state.exportSize, (v) => (state.exportSize = v), {
+      after: () => { applyExportSize(); paintStageBadge(); }
+    });
+    bind("exFps", () => String(state.fps), (v) => (state.fps = Number(v)), { after: paintStageBadge });
+    bind("exFormat", () => state.format, (v) => (state.format = v), {
+      after: () => { paintFormatHint(); paintStageBadge(); }
+    });
   }
 
   function bindPanels() {
@@ -793,7 +851,9 @@
       const d = engine.duration;
       $("curTime").textContent = fmtTime(engine.currentTime);
       $("durTime").textContent = fmtTime(d);
-      $("seek").value = d ? Math.round((engine.currentTime / d) * 1000) : 0;
+      const seekEl = $("seek");
+      seekEl.value = d ? Math.round((engine.currentTime / d) * 1000) : 0;
+      paintRange(seekEl);
     }
     if (recorder.active) $("recTime").textContent = fmtTime(recorder.elapsed);
   };

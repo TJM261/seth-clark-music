@@ -259,6 +259,14 @@
           </select>
         </label>
         <label class="field">
+          <span>File format</span>
+          <select id="exFormat">
+            <option value="webm">WebM — VP9 + Opus</option>
+            <option value="mp4">MP4 — H.264 + AAC</option>
+          </select>
+        </label>
+        <p class="hint" id="formatHint"></p>
+        <label class="field">
           <span>Frame rate</span>
           <select id="exFps">
             <option value="60">60 fps</option>
@@ -296,9 +304,11 @@
       <div class="dropzone" id="dropzone">
         <div>
           <strong>Drop a track here</strong>
-          <span>MP3, WAV, FLAC, M4A — nothing leaves your computer</span>
+          <span>MP3, WAV, FLAC, M4A, OGG — read straight off your disk</span>
+          <div class="keys"><kbd>Space</kbd> play or pause &nbsp;·&nbsp; <kbd>F</kbd> fullscreen</div>
         </div>
       </div>
+      <div class="stage-badge" id="stageBadge"></div>
       <div class="rec-badge" id="recBadge" hidden><span class="rec-dot"></span>REC <b id="recTime">0:00</b></div>
     </div>
 
