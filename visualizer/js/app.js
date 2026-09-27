@@ -37,6 +37,39 @@
   /* The layer being edited. */
   const L = () => state.layers[state.active] || null;
 
+  /* Outlining a region on the preview, for the flow scene. */
+  let pathEdit = null;
+
+  function startPathEdit(layer, key) {
+    pathEdit = { layer, key, points: [] };
+    renderer.pathPreview = { points: [], closed: true };
+    $("stageInner").classList.add("path-mode");
+    $("pathHint").hidden = false;
+    buildSceneOpts();
+  }
+
+  function addPathPoint(clientX, clientY) {
+    const r = $("viz").getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const x = Viz.clamp((clientX - r.left) / r.width, 0, 1);
+    const y = Viz.clamp((clientY - r.top) / r.height, 0, 1);
+    pathEdit.points.push([+x.toFixed(4), +y.toFixed(4)]);
+    renderer.pathPreview = { points: pathEdit.points.slice(), closed: true };
+  }
+
+  function endPathEdit(commit) {
+    if (!pathEdit) return;
+    if (commit && pathEdit.points.length >= 2) {
+      pathEdit.layer.opts[pathEdit.key] = pathEdit.points;
+    }
+    pathEdit = null;
+    renderer.pathPreview = null;
+    $("stageInner").classList.remove("path-mode");
+    $("pathHint").hidden = true;
+    buildSceneOpts();
+    save();
+  }
+
   /* ---------- persistence ---------- */
 
   function save() {
@@ -155,6 +188,7 @@
   }
 
   function selectLayer(i) {
+    if (pathEdit) endPathEdit(true);
     state.active = Viz.clamp(i, 0, state.layers.length - 1);
     refreshLayerUI();
     save();
@@ -259,6 +293,49 @@
 
     options.forEach((o) => {
       if (layer.opts[o.key] === undefined) layer.opts[o.key] = o.def;
+
+      if (o.type === "path") {
+        const editing = pathEdit && pathEdit.layer === layer && pathEdit.key === o.key;
+        const stored = layer.opts[o.key];
+        const wrap = document.createElement("div");
+        wrap.className = "field";
+        const head = document.createElement("span");
+        head.textContent = o.label + " ";
+        const state_b = document.createElement("b");
+        state_b.textContent = editing
+          ? pathEdit.points.length + " points…"
+          : (stored && stored.length ? stored.length + " points" : "whole frame");
+        head.appendChild(state_b);
+        wrap.appendChild(head);
+
+        const row = document.createElement("div");
+        row.className = "row";
+        const draw = document.createElement("button");
+        draw.type = "button";
+        draw.className = "btn" + (editing ? " record armed" : "");
+        draw.textContent = editing ? "Finish" : (stored && stored.length ? "Redraw region" : "Draw region");
+        draw.addEventListener("click", () => {
+          if (editing) endPathEdit(true);
+          else startPathEdit(layer, o.key);
+        });
+        row.appendChild(draw);
+
+        const clear = document.createElement("button");
+        clear.type = "button";
+        clear.className = "btn ghost";
+        clear.textContent = "Clear";
+        clear.disabled = !stored && !editing;
+        clear.addEventListener("click", () => {
+          if (editing) endPathEdit(false);
+          layer.opts[o.key] = null;
+          buildSceneOpts();
+          save();
+        });
+        row.appendChild(clear);
+        wrap.appendChild(row);
+        host.appendChild(wrap);
+        return;
+      }
 
       if (o.type === "check") {
         const label = document.createElement("label");
@@ -806,6 +883,12 @@
     });
 
     document.addEventListener("keydown", (e) => {
+      /* While outlining, Enter commits and Escape abandons; nothing else. */
+      if (pathEdit) {
+        if (e.key === "Enter") { e.preventDefault(); endPathEdit(true); }
+        if (e.key === "Escape") { e.preventDefault(); endPathEdit(false); }
+        return;
+      }
       const tag = (e.target.tagName || "").toLowerCase();
       if (tag === "input" || tag === "select" || tag === "textarea") return;
       if (e.code === "Space") { e.preventDefault(); togglePlay(); }
@@ -852,6 +935,19 @@
     });
     $("bgImageClear").addEventListener("click", clearBgImage);
     $("ovLogoClear").addEventListener("click", clearLogo);
+
+    const viz = $("viz");
+    viz.addEventListener("click", (e) => {
+      if (!pathEdit) return;
+      e.preventDefault();
+      addPathPoint(e.clientX, e.clientY);
+      buildSceneOpts();
+    });
+    viz.addEventListener("dblclick", (e) => {
+      if (!pathEdit) return;
+      e.preventDefault();
+      endPathEdit(true);
+    });
 
     $("recordBtn").addEventListener("click", () => {
       if (recorder.active) stopRecording();

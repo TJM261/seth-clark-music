@@ -146,9 +146,43 @@ field at once, so it applies to the composition as a whole.
 | **Particles** | A field thrown out from an emitter. | Emit from centre or any edge, direction (away, inward, fixed angle), spread, speed, emitter size |
 | **Rings** | Spectrum-deformed blob shedding ripples on the beat. | Blob and ripples independently, ripple speed, base size |
 | **Frame** | Spectrum along every edge at once. | All four sides or one pair, facing in or out, inset, reach |
+| **Ripple** | Raindrops landing on water, each sending out a train of rings. | Where drops land, rings per drop, spread speed, persistence, idle rate |
+| **Ocean wave** | Rolling swells, stacked front to back, with foam on the crests. | Swell count, roll speed and direction, height, water line, crest foam |
+| **Froth** | Churning sea foam, as a band along an edge or filling the layer. | Where it sits, band depth, churn, crispness |
+| **Bubbles** | Bubbles that rise, wobble, catch the light and pop. | Flow (rise, along an angle, circling current, winding stream), angle, speed, size, wobble, pop on the beat |
+| **Mist** | Slow drifting fog. | Drift angle and speed, cloud size, density, swells with the music |
+| **Ice** | Cracked ice with glints running along the fractures, and frost shimmer. | Cracks, shimmer or both; pattern seed, crack density, shift on the beat, glint speed |
+| **Flow (path)** | Makes whatever is underneath ripple like flowing water, inside a region you outline. | Region, area or band, band width, flow direction, distortion, wave size, speed, caustics, tint, soft edges |
 
 **Frame** is the quickest way to get the edges moving on all sides. For finer
 control use four **Bars** layers, one per direction.
+
+The water scenes look like water on a cool palette — **Ice**, **Midnight**
+or **Forest**. On **Ember** or **Gold** the same scenes read as lava or
+molten metal, which is a fine thing to want, but it is not what "ocean wave"
+suggests. Layering them is the point: an Ocean wave low in the frame, Froth
+at the waterline, Bubbles rising through it and Mist over the top.
+
+### Flow (path)
+
+This one works on the pixels already drawn beneath it — the background
+image, the artwork, other layers — and resamples them in travelling strips
+so they ripple. Put it **above** the layers you want to distort.
+
+Press **Draw region** and click points on the preview to outline the area.
+Double-click or press **Enter** to finish, **Esc** to abandon. **Clear**
+removes the outline, and with no outline the whole frame flows.
+
+- **Region is** — the enclosed area of your outline, or a band of a given
+  width running along it, for a river or a stream.
+- **Distortion**, **Wave size**, **Speed** — how hard, how large and how
+  fast the ripple travels. **Flow** picks sideways or up-and-down.
+- **Caustics** adds the bright bands that slide across a pool's surface.
+- **Water tint** colours the region from the palette.
+
+Because it has to line up with the pixels underneath, this scene works in
+canvas space: the layer's position, size and rotation sliders do nothing
+here. The outline is the region. Opacity and blend still apply.
 
 Shared reactivity controls (under **Reactivity**) apply to every layer:
 

@@ -16,6 +16,8 @@ Viz.Renderer = class {
     this.logoImage = null;
     this.grainPattern = null;
     this._stores = {};
+    this._snap = null;
+    this.pathPreview = null;
     this._bgKey = null;
     this._bgCanvas = null;
     this._bgToken = 0;
@@ -58,6 +60,18 @@ Viz.Renderer = class {
   _storeFor(layer) {
     const key = layer.id + "|" + layer.scene;
     return this._stores[key] || (this._stores[key] = {});
+  }
+
+  /* A copy of the field exactly as it stands, for scenes that distort what
+     is already beneath them. Taken on demand: only the flow scene asks. */
+  _snapshotField(w, h) {
+    const c = this._snap || (this._snap = document.createElement("canvas"));
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    const g = c.getContext("2d");
+    g.globalCompositeOperation = "copy";
+    g.drawImage(this.field, 0, 0);
+    g.globalCompositeOperation = "source-over";
+    return c;
   }
 
   _pruneStores() {
@@ -269,6 +283,35 @@ Viz.Renderer = class {
     ctx.restore();
   }
 
+  /* The path being outlined, shown while the user is placing points. */
+  _drawPathPreview(ctx, w, h) {
+    const pv = this.pathPreview;
+    if (!pv || !pv.points || !pv.points.length) return;
+    const pts = pv.points.map(([x, y]) => [x * w, y * h]);
+    const r = Math.max(4, Math.min(w, h) * 0.006);
+
+    ctx.save();
+    ctx.setLineDash([r * 2, r * 1.6]);
+    ctx.lineWidth = Math.max(1.5, Math.min(w, h) * 0.002);
+    ctx.strokeStyle = "rgba(255,255,255,0.95)";
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+    if (pv.closed && pts.length > 2) ctx.closePath();
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    pts.forEach(([x, y], i) => {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = i === 0 ? "#ff7a3d" : "#fff";
+      ctx.fill();
+      ctx.lineWidth = Math.max(1, r * 0.3);
+      ctx.strokeStyle = "rgba(0,0,0,0.6)";
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
   renderFrame(now) {
     const w = this.canvas.width, h = this.canvas.height;
     const t = now / 1000;
@@ -291,27 +334,34 @@ Viz.Renderer = class {
       const scene = Viz.scenes[layer.scene];
       if (!scene) continue;
 
-      const lw = Math.max(8, layer.w * w);
-      const lh = Math.max(8, layer.h * h);
       a.bands = this.engine.bands(layer.params.count);
-
-      fctx.save();
-      fctx.globalAlpha = layer.opacity;
-      fctx.globalCompositeOperation = layer.blend || "source-over";
-      /* Place by the layer's centre, then hand the scene a box of its own
-         so every scene gets position, size and rotation for free. */
-      fctx.translate(layer.x * w, layer.y * h);
-      if (layer.rot) fctx.rotate((layer.rot * Math.PI) / 180);
-      fctx.translate(-lw / 2, -lh / 2);
-
-      scene.draw(fctx, lw, lh, a, {
+      const sceneState = {
         colors: this.colors,
         params: layer.params,
         opts: layer.opts || {},
         store: this._storeFor(layer),
         scale,
         layer
-      }, t, dt);
+      };
+
+      fctx.save();
+      fctx.globalAlpha = layer.opacity;
+      fctx.globalCompositeOperation = layer.blend || "source-over";
+
+      if (scene.rawSpace) {
+        /* Works in canvas space so it can line up with the pixels beneath. */
+        sceneState.below = () => this._snapshotField(w, h);
+        scene.draw(fctx, w, h, a, sceneState, t, dt);
+      } else {
+        const lw = Math.max(8, layer.w * w);
+        const lh = Math.max(8, layer.h * h);
+        /* Place by the layer's centre, then hand the scene a box of its own
+           so every scene gets position, size and rotation for free. */
+        fctx.translate(layer.x * w, layer.y * h);
+        if (layer.rot) fctx.rotate((layer.rot * Math.PI) / 180);
+        fctx.translate(-lw / 2, -lh / 2);
+        scene.draw(fctx, lw, lh, a, sceneState, t, dt);
+      }
       fctx.restore();
     }
 
@@ -323,6 +373,7 @@ Viz.Renderer = class {
     this._drawVignette(ctx, w, h, this.state.bg.vignette);
     this._drawGrain(ctx, w, h, this.state.bg.grain);
     this._drawOverlay(ctx, w, h, a);
+    this._drawPathPreview(ctx, w, h);
 
     if (this.onFrame) this.onFrame(a);
   }

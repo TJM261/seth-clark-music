@@ -99,3 +99,37 @@ Viz.exitFullscreen = function () {
     document.webkitCancelFullScreen;
   if (fn) try { fn.call(document); } catch (e) { /* already exited */ }
 };
+
+/* Small deterministic RNG, so patterns that should stay put between frames
+   (ice cracks, mist blobs) can be regenerated identically from a seed. */
+Viz.rng = function (seed) {
+  let s = (seed >>> 0) || 1;
+  return function () {
+    s ^= s << 13; s >>>= 0;
+    s ^= s >> 17;
+    s ^= s << 5;  s >>>= 0;
+    return s / 4294967296;
+  };
+};
+
+/* Cheap smooth pseudo-noise: summed sines. Fast enough to call per particle
+   per frame, and good enough for drift and churn. */
+Viz.noise2 = function (x, y, t) {
+  return (
+    Math.sin(x * 1.7 + t * 0.7) * 0.5 +
+    Math.sin(y * 2.3 - t * 0.5) * 0.3 +
+    Math.sin((x + y) * 1.1 + t * 0.9) * 0.2
+  );
+};
+
+/* A soft round blob, used by froth, mist and bubbles. */
+Viz.softDisc = function (ctx, x, y, r, inner, outer) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, Math.max(0.01, r));
+  g.addColorStop(0, inner);
+  g.addColorStop(0.55, inner);
+  g.addColorStop(1, outer);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x, y, Math.max(0.01, r), 0, Math.PI * 2);
+  ctx.fill();
+};

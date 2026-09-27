@@ -482,6 +482,27 @@ input[type="range"]:disabled { opacity: 0.4; cursor: default; }
 }
 .stage-inner.dragging .dropzone { border-color: var(--accent); display: flex; }
 
+.stage-inner.path-mode #viz { cursor: crosshair; }
+
+.path-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 44px;
+  transform: translateX(-50%);
+  background: rgba(11, 12, 15, 0.92);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 12px;
+  color: var(--text);
+  text-align: center;
+  pointer-events: none;
+  max-width: 90%;
+}
+
+.path-hint b { font-weight: 600; }
+.path-hint span { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); }
+
 .rec-badge {
   position: absolute;
   top: 34px;
